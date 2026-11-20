@@ -136,15 +136,16 @@
 
     .yt-slot {
       width: 100%;
-      max-width: 420px;
-      border-radius: 18px;
+      max-width: 340px;
+      border-radius: 16px;
       overflow: hidden;
-      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.32);
+      opacity: 0.9;
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
     }
 
     .yt-slot iframe {
       width: 100%;
-      height: 120px;
+      height: 80px;
       border: 0;
       display: block;
     }
@@ -161,21 +162,21 @@
     <div id="frase" class="box box--frase"></div>
     <div id="parrafo" class="box box--parrafo"></div>
 
-    <section id="yt-container" class="yt-slot" aria-label="Reproductor de música">
+    <section id="yt-container" class="yt-slot" aria-label="Música de fondo">
       <iframe
         id="yt-player"
-        allow="autoplay; encrypted-media; picture-in-picture"
+        allow="autoplay; encrypted-media"
         allowfullscreen
       ></iframe>
     </section>
   </main>
 
+  <script src="https://www.youtube.com/iframe_api"></script>
   <script>
     const REPO_OWNER = "Ceroick";
     const REPO_NAME = "para-andres";
     const WALLPAPERS_DIR = "wallpapers";
 
-    // Playlist de YouTube y rango aproximado para sortear el índice inicial
     const PLAYLIST_ID = "PLCirePHuwNIQrcj08AO3nx10m5_Jg-txE";
     const PLAYLIST_MAX_START_INDEX = 40;
 
@@ -198,6 +199,9 @@
       "su-san-lee-E_eWwM29wfU-unsplash.jpg",
       "tom-podmore-PNcxla2HHBk-unsplash.jpg"
     ];
+
+    let ytPlayerInstance = null;
+    let audioDesbloqueado = false;
 
     function pickRandom(arr) {
       if (!Array.isArray(arr) || arr.length === 0) return null;
@@ -256,9 +260,7 @@
         const satAcento = Math.min(Math.max(s, 35), 75);
         document.documentElement.style.setProperty("--accent", `hsl(${h}, ${satAcento}%, 26%)`);
         document.documentElement.style.setProperty("--text-primary", `hsl(${h}, ${Math.min(satAcento, 30)}%, 11%)`);
-      } catch (_) {
-        // Conserva contraste por defecto si no se puede leer píxeles
-      }
+      } catch (_) {}
     }
 
     async function obtenerWallpapers() {
@@ -274,9 +276,7 @@
             .map((item) => item.download_url || `./${WALLPAPERS_DIR}/${encodeURIComponent(item.name)}`);
           if (files.length > 0) return files;
         }
-      } catch (_) {
-        // Respaldo local
-      }
+      } catch (_) {}
       return FALLBACK_WALLPAPERS.map((name) => `./${WALLPAPERS_DIR}/${encodeURIComponent(name)}`);
     }
 
@@ -302,8 +302,43 @@
       const randomStartIndex = Math.floor(Math.random() * PLAYLIST_MAX_START_INDEX);
       iframe.src =
         `https://www.youtube.com/embed/videoseries?list=${encodeURIComponent(PLAYLIST_ID)}` +
-        `&index=${randomStartIndex}&shuffle=1&rel=0`;
+        `&index=${randomStartIndex}&shuffle=1&autoplay=1&enablejsapi=1&rel=0`;
     }
+
+    window.onYouTubeIframeAPIReady = function () {
+      if (!PLAYLIST_ID) return;
+      const randomStartIndex = Math.floor(Math.random() * PLAYLIST_MAX_START_INDEX);
+      ytPlayerInstance = new YT.Player("yt-player", {
+        playerVars: {
+          listType: "playlist",
+          list: PLAYLIST_ID,
+          index: randomStartIndex,
+          autoplay: 1,
+          rel: 0
+        },
+        events: {
+          onReady: (event) => {
+            try {
+              event.target.setShuffle(true);
+              event.target.playVideo();
+            } catch (_) {}
+          }
+        }
+      });
+    };
+
+    function desbloquearAudioAlInteractuar() {
+      if (audioDesbloqueado) return;
+      audioDesbloqueado = true;
+      if (ytPlayerInstance && typeof ytPlayerInstance.unMute === "function") {
+        try {
+          ytPlayerInstance.unMute();
+          ytPlayerInstance.playVideo();
+        } catch (_) {}
+      }
+    }
+
+    document.addEventListener("pointerdown", desbloquearAudioAlInteractuar, { once: true });
 
     async function init() {
       const wallpapers = await obtenerWallpapers();
