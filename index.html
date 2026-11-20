@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>Para Andrés</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -139,13 +142,12 @@
       max-width: 340px;
       border-radius: 16px;
       overflow: hidden;
-      opacity: 0.9;
       box-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
     }
 
     .yt-slot iframe {
       width: 100%;
-      height: 80px;
+      height: 88px;
       border: 0;
       display: block;
     }
@@ -163,11 +165,7 @@
     <div id="parrafo" class="box box--parrafo"></div>
 
     <section id="yt-container" class="yt-slot" aria-label="Música de fondo">
-      <iframe
-        id="yt-player"
-        allow="autoplay; encrypted-media"
-        allowfullscreen
-      ></iframe>
+      <div id="yt-player"></div>
     </section>
   </main>
 
@@ -176,6 +174,7 @@
     const REPO_OWNER = "Ceroick";
     const REPO_NAME = "para-andres";
     const WALLPAPERS_DIR = "wallpapers";
+    const CACHE_BUSTER = Date.now();
 
     const PLAYLIST_ID = "PLCirePHuwNIQrcj08AO3nx10m5_Jg-txE";
     const PLAYLIST_MAX_START_INDEX = 40;
@@ -201,7 +200,38 @@
     ];
 
     let ytPlayerInstance = null;
-    let audioDesbloqueado = false;
+    let ytReady = false;
+    let pendingPlayOnInteract = false;
+
+    function conBustCache(url) {
+      const sep = url.includes("?") ? "&" : "?";
+      return `${url}${sep}cb=${CACHE_BUSTER}`;
+    }
+
+    // Si hay versión nueva del documento en el servidor, recarga una vez por pestaña
+    async function verificarActualizacionDocumento() {
+      try {
+        const res = await fetch(`./index.html?cb=${CACHE_BUSTER}`, {
+          method: "HEAD",
+          cache: "no-store"
+        });
+        if (!res.ok) return;
+        const remoteVersion = res.headers.get("etag") || res.headers.get("last-modified");
+        if (!remoteVersion) return;
+
+        const keyVersion = "para_andres_doc_ver";
+        const keyReloaded = "para_andres_doc_reloaded";
+        const prevVersion = sessionStorage.getItem(keyVersion);
+
+        if (prevVersion && prevVersion !== remoteVersion && !sessionStorage.getItem(keyReloaded)) {
+          sessionStorage.setItem(keyVersion, remoteVersion);
+          sessionStorage.setItem(keyReloaded, "1");
+          window.location.reload();
+          return;
+        }
+        sessionStorage.setItem(keyVersion, remoteVersion);
+      } catch (_) {}
+    }
 
     function pickRandom(arr) {
       if (!Array.isArray(arr) || arr.length === 0) return null;
@@ -266,18 +296,20 @@
     async function obtenerWallpapers() {
       const exts = /\.(jpe?g|png|webp|gif)$/i;
       try {
-        const apiUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${WALLPAPERS_DIR}`;
+        const apiUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${WALLPAPERS_DIR}?cb=${CACHE_BUSTER}`;
         const res = await fetch(apiUrl, { cache: "no-store" });
         if (!res.ok) throw new Error("API limit or not found");
         const items = await res.json();
         if (Array.isArray(items)) {
           const files = items
             .filter((item) => item.type === "file" && exts.test(item.name))
-            .map((item) => item.download_url || `./${WALLPAPERS_DIR}/${encodeURIComponent(item.name)}`);
+            .map((item) => conBustCache(item.download_url || `./${WALLPAPERS_DIR}/${encodeURIComponent(item.name)}`));
           if (files.length > 0) return files;
         }
       } catch (_) {}
-      return FALLBACK_WALLPAPERS.map((name) => `./${WALLPAPERS_DIR}/${encodeURIComponent(name)}`);
+      return FALLBACK_WALLPAPERS.map((name) =>
+        conBustCache(`./${WALLPAPERS_DIR}/${encodeURIComponent(name)}`)
+      );
     }
 
     function construirFraseDinamica(frasesObj) {
@@ -296,51 +328,52 @@
       return limpiarEspacios(partes.join(" "));
     }
 
-    function configurarYoutube() {
-      if (!PLAYLIST_ID) return;
-      const iframe = document.getElementById("yt-player");
-      const randomStartIndex = Math.floor(Math.random() * PLAYLIST_MAX_START_INDEX);
-      iframe.src =
-        `https://www.youtube.com/embed/videoseries?list=${encodeURIComponent(PLAYLIST_ID)}` +
-        `&index=${randomStartIndex}&shuffle=1&autoplay=1&enablejsapi=1&rel=0`;
-    }
-
     window.onYouTubeIframeAPIReady = function () {
       if (!PLAYLIST_ID) return;
       const randomStartIndex = Math.floor(Math.random() * PLAYLIST_MAX_START_INDEX);
       ytPlayerInstance = new YT.Player("yt-player", {
+        width: "100%",
+        height: "88",
         playerVars: {
           listType: "playlist",
           list: PLAYLIST_ID,
           index: randomStartIndex,
           autoplay: 1,
-          rel: 0
+          rel: 0,
+          playsinline: 1
         },
         events: {
           onReady: (event) => {
+            ytReady = true;
             try {
               event.target.setShuffle(true);
               event.target.playVideo();
             } catch (_) {}
+            if (pendingPlayOnInteract) {
+              try {
+                event.target.unMute();
+                event.target.playVideo();
+              } catch (_) {}
+            }
           }
         }
       });
     };
 
-    function desbloquearAudioAlInteractuar() {
-      if (audioDesbloqueado) return;
-      audioDesbloqueado = true;
-      if (ytPlayerInstance && typeof ytPlayerInstance.unMute === "function") {
-        try {
-          ytPlayerInstance.unMute();
-          ytPlayerInstance.playVideo();
-        } catch (_) {}
-      }
+    function intentarReproducirEnInteraccion() {
+      pendingPlayOnInteract = true;
+      if (!ytReady || !ytPlayerInstance) return;
+      try {
+        ytPlayerInstance.unMute();
+        ytPlayerInstance.playVideo();
+      } catch (_) {}
     }
 
-    document.addEventListener("pointerdown", desbloquearAudioAlInteractuar, { once: true });
+    document.addEventListener("pointerdown", intentarReproducirEnInteraccion, { once: true });
 
     async function init() {
+      await verificarActualizacionDocumento();
+
       const wallpapers = await obtenerWallpapers();
       const elegidoFondo = pickRandom(wallpapers);
       const imgEl = document.getElementById("wallpaper");
@@ -350,12 +383,10 @@
         imgEl.src = elegidoFondo;
       }
 
-      configurarYoutube();
-
       try {
         const [resSaludos, resFrases] = await Promise.all([
-          fetch("./saludos.json", { cache: "no-store" }),
-          fetch("./frases.json", { cache: "no-store" })
+          fetch(`./saludos.json?cb=${CACHE_BUSTER}`, { cache: "no-store" }),
+          fetch(`./frases.json?cb=${CACHE_BUSTER}`, { cache: "no-store" })
         ]);
 
         if (!resSaludos.ok || !resFrases.ok) {
