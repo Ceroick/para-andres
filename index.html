@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Para Andrés</title>
+  <style>
+    :root {
+      --bg: #0b0b0d;
+      --card: #141418;
+      --border: #26262e;
+      --text: #f3f4f6;
+      --muted: #9ca3af;
+      --accent: #e5e7eb;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100dvh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      line-height: 1.6;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 540px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .saludo {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+
+    .frase-dinamica {
+      font-size: 1.05rem;
+      color: var(--accent);
+      border-left: 2px solid #4b5563;
+      padding-left: 14px;
+    }
+
+    .parrafo {
+      font-size: 0.98rem;
+      color: var(--muted);
+    }
+
+    button {
+      align-self: flex-start;
+      background: var(--text);
+      color: var(--bg);
+      border: none;
+      border-radius: 10px;
+      padding: 10px 18px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s ease, transform 0.1s ease;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <p id="saludo" class="saludo">Cargando...</p>
+    <p id="frase" class="frase-dinamica"></p>
+    <p id="parrafo" class="parrafo"></p>
+    <button id="btn-generar" type="button">Otro mensaje</button>
+  </main>
+
+  <script>
+    let dataSaludos = null;
+    let dataFrases = null;
+    const ultimosIndices = {};
+
+    function pickIndex(key, length) {
+      if (!Array.isArray(length) && typeof length !== "number") return 0;
+      if (length <= 1) return 0;
+      let idx;
+      do {
+        idx = Math.floor(Math.random() * length);
+      } while (idx === ultimosIndices[key]);
+      ultimosIndices[key] = idx;
+      return idx;
+    }
+
+    function pickItem(key, arr) {
+      if (!Array.isArray(arr) || arr.length === 0) return "";
+      return arr[pickIndex(key, arr.length)];
+    }
+
+    function limpiarEspacios(texto) {
+      return String(texto || "").replace(/\s+/g, " ").trim();
+    }
+
+    function generarMensaje() {
+      if (!dataSaludos || !dataFrases) return;
+
+      const nombre = limpiarEspacios(dataSaludos.nombre || "Andrés");
+      const saludoRaw = pickItem("saludo", dataSaludos.saludos);
+      const saludoFinal = limpiarEspacios(saludoRaw.replaceAll("{nombre}", nombre));
+
+      const m1 = pickItem("m1", dataFrases.modulo1);
+      const m2 = pickItem("m2", dataFrases.modulo2);
+      const m3 = pickItem("m3", dataFrases.modulo3);
+      const m4 = pickItem("m4", dataFrases.modulo4);
+
+      const fraseFinal = limpiarEspacios(`${m1} ${m2} ${m3} ${m4}`);
+      const parrafoFinal = limpiarEspacios(pickItem("parrafo", dataFrases.parrafos));
+
+      document.getElementById("saludo").textContent = saludoFinal;
+      document.getElementById("frase").textContent = fraseFinal;
+      document.getElementById("parrafo").textContent = parrafoFinal;
+    }
+
+    async function init() {
+      try {
+        const [resSaludos, resFrases] = await Promise.all([
+          fetch("./saludos.json", { cache: "no-store" }),
+          fetch("./frases.json", { cache: "no-store" })
+        ]);
+
+        if (!resSaludos.ok || !resFrases.ok) {
+          throw new Error("No se pudieron cargar saludos.json o frases.json");
+        }
+
+        dataSaludos = await resSaludos.json();
+        dataFrases = await resFrases.json();
+        generarMensaje();
+      } catch (err) {
+        document.getElementById("saludo").textContent = "Error al cargar el contenido.";
+        document.getElementById("frase").textContent = "";
+        document.getElementById("parrafo").textContent = err.message;
+      }
+    }
+
+    document.getElementById("btn-generar").addEventListener("click", generarMensaje);
+    init();
+  </script>
+</body>
+</html>
