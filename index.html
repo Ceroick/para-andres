@@ -4,14 +4,24 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Para Andrés</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #0b0b0d;
-      --card: #141418;
-      --border: #26262e;
-      --text: #f3f4f6;
-      --muted: #9ca3af;
-      --accent: #e5e7eb;
+      --bg-fallback: #0d0e12;
+      --box-bg: rgba(244, 245, 248, 0.94);
+      --text-primary: #14161a;
+      --text-secondary: #262930;
+      --accent: #1d4ed8;
+      --border-subtle: rgba(255, 255, 255, 0.35);
+      --font-saludo: clamp(1.05rem, 3.8vw, 1.35rem);
+      --font-frase: clamp(0.98rem, 3.4vw, 1.18rem);
+      --font-parrafo: clamp(0.88rem, 3vw, 0.98rem);
+      --pad-y: clamp(12px, 3vw, 18px);
+      --pad-x: clamp(18px, 5vw, 28px);
+      --radius-pill: 999px;
+      --radius-box: 26px;
     }
 
     * {
@@ -20,100 +30,254 @@
       padding: 0;
     }
 
-    body {
+    html, body {
       min-height: 100dvh;
-      background: var(--bg);
-      color: var(--text);
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      display: grid;
-      place-items: center;
-      padding: 20px;
-      line-height: 1.6;
+      width: 100%;
+      font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-fallback);
+      overflow-x: hidden;
     }
 
-    .card {
+    .wallpaper-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      background-color: var(--bg-fallback);
+    }
+
+    .wallpaper-img {
       width: 100%;
-      max-width: 540px;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 28px 24px;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      display: block;
+      filter: brightness(0.92) contrast(1.03);
+    }
+
+    .wallpaper-scrim {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      background: linear-gradient(
+        to bottom,
+        rgba(10, 12, 16, 0.22),
+        rgba(10, 12, 16, 0.34)
+      );
+      pointer-events: none;
+    }
+
+    .stage {
+      position: relative;
+      z-index: 2;
+      min-height: 100dvh;
+      width: 100%;
+      padding: clamp(20px, 5vh, 44px) clamp(14px, 4vw, 24px);
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(14px, 2.6vh, 22px);
     }
 
-    .saludo {
-      font-size: 1.15rem;
-      font-weight: 600;
-      color: var(--text);
-      letter-spacing: -0.01em;
+    .box {
+      width: 100%;
+      max-width: 560px;
+      background: var(--box-bg);
+      color: var(--text-primary);
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+      text-align: center;
+      transition: background-color 0.25s ease, color 0.25s ease, padding 0.2s ease;
     }
 
-    .frase-dinamica {
-      font-size: 1.05rem;
+    .box--saludo {
+      width: fit-content;
+      max-width: 92vw;
+      border-radius: var(--radius-pill);
+      padding: calc(var(--pad-y) * 0.78) calc(var(--pad-x) * 1.15);
+      font-size: var(--font-saludo);
+      font-weight: 700;
+      line-height: 1.35;
       color: var(--accent);
-      border-left: 2px solid #4b5563;
-      padding-left: 14px;
     }
 
-    .parrafo {
-      font-size: 0.98rem;
-      color: var(--muted);
-    }
-
-    button {
-      align-self: flex-start;
-      background: var(--text);
-      color: var(--bg);
-      border: none;
-      border-radius: 10px;
-      padding: 10px 18px;
-      font-size: 0.92rem;
+    .box--frase {
+      border-radius: var(--radius-box);
+      padding: var(--pad-y) var(--pad-x);
+      font-size: var(--font-frase);
       font-weight: 600;
-      cursor: pointer;
-      transition: opacity 0.15s ease, transform 0.1s ease;
+      line-height: 1.5;
+      color: var(--text-primary);
     }
 
-    button:hover {
-      opacity: 0.9;
+    .box--parrafo {
+      border-radius: var(--radius-box);
+      padding: var(--pad-y) var(--pad-x);
+      font-size: var(--font-parrafo);
+      font-weight: 500;
+      line-height: 1.58;
+      color: var(--text-secondary);
     }
 
-    button:active {
-      transform: scale(0.98);
+    .box.dense--medium {
+      --pad-y: clamp(11px, 2.4vw, 15px);
+      --pad-x: clamp(16px, 4vw, 24px);
+      font-size: calc(var(--font-parrafo) * 0.95);
+      line-height: 1.5;
+    }
+
+    .box.dense--high {
+      --pad-y: clamp(10px, 2vw, 13px);
+      --pad-x: clamp(15px, 3.6vw, 20px);
+      font-size: calc(var(--font-parrafo) * 0.9);
+      line-height: 1.44;
+    }
+
+    .yt-slot {
+      width: 100%;
+      max-width: 420px;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.32);
+    }
+
+    .yt-slot iframe {
+      width: 100%;
+      height: 120px;
+      border: 0;
+      display: block;
     }
   </style>
 </head>
 <body>
-  <main class="card">
-    <p id="saludo" class="saludo">Cargando...</p>
-    <p id="frase" class="frase-dinamica"></p>
-    <p id="parrafo" class="parrafo"></p>
-    <button id="btn-generar" type="button">Otro mensaje</button>
+  <div class="wallpaper-layer">
+    <img id="wallpaper" class="wallpaper-img" alt="" crossorigin="anonymous" />
+  </div>
+  <div class="wallpaper-scrim"></div>
+
+  <main class="stage">
+    <div id="saludo" class="box box--saludo">Cargando...</div>
+    <div id="frase" class="box box--frase"></div>
+    <div id="parrafo" class="box box--parrafo"></div>
+
+    <section id="yt-container" class="yt-slot" aria-label="Reproductor de música">
+      <iframe
+        id="yt-player"
+        allow="autoplay; encrypted-media; picture-in-picture"
+        allowfullscreen
+      ></iframe>
+    </section>
   </main>
 
   <script>
-    let dataSaludos = null;
-    let dataFrases = null;
-    const ultimosIndices = {};
+    const REPO_OWNER = "Ceroick";
+    const REPO_NAME = "para-andres";
+    const WALLPAPERS_DIR = "wallpapers";
 
-    function pickIndex(key, length) {
-      if (typeof length !== "number" || length <= 1) return 0;
-      let idx;
-      do {
-        idx = Math.floor(Math.random() * length);
-      } while (idx === ultimosIndices[key]);
-      ultimosIndices[key] = idx;
-      return idx;
-    }
+    // Playlist de YouTube y rango aproximado para sortear el índice inicial
+    const PLAYLIST_ID = "PLCirePHuwNIQrcj08AO3nx10m5_Jg-txE";
+    const PLAYLIST_MAX_START_INDEX = 40;
 
-    function pickItem(key, arr) {
-      if (!Array.isArray(arr) || arr.length === 0) return "";
-      return arr[pickIndex(key, arr.length)];
+    const FALLBACK_WALLPAPERS = [
+      "agustin-diaz-gargiulo-7F65HDP0-E0-unsplash.jpg",
+      "clay-banks-hwLAI5IRhdM-unsplash.jpg",
+      "davi-costa-4IWIQ43CCmM-unsplash.jpg",
+      "henrique-ferreira-62QRdDoe44M-unsplash.jpg",
+      "ines-d-anselme-IAe4R_RiB08-unsplash.jpg",
+      "jayesh-patel-zHRlfpTGXx8-unsplash.jpg",
+      "ken-cheung-VbLTNceBTFE-unsplash.jpg",
+      "mai-sakura-EPwqsFwhm4Y-unsplash.jpg",
+      "mai-sakura-ovCfRHRg2IQ-unsplash.jpg",
+      "manuel-cosentino-n--CMLApjfl-unsplash.jpg",
+      "peter-van-der-meulen-EqtVTJ-ufnM-unsplash.jpg",
+      "rafael-peier-W8gTDaTb0mE-unsplash.jpg",
+      "raphael-andres-3cwvFD-YPtk-unsplash.jpg",
+      "raphael-nogueira-CErddu-JwKw-unsplash.jpg",
+      "sam-williams-UuGAw6nF0Vw-unsplash.jpg",
+      "su-san-lee-E_eWwM29wfU-unsplash.jpg",
+      "tom-podmore-PNcxla2HHBk-unsplash.jpg"
+    ];
+
+    function pickRandom(arr) {
+      if (!Array.isArray(arr) || arr.length === 0) return null;
+      return arr[Math.floor(Math.random() * arr.length)];
     }
 
     function limpiarEspacios(texto) {
       return String(texto || "").replace(/\s+/g, " ").trim();
+    }
+
+    function ajustarDensidad(el, texto) {
+      el.classList.remove("dense--medium", "dense--high");
+      const len = texto.length;
+      if (len > 220) {
+        el.classList.add("dense--high");
+      } else if (len > 130) {
+        el.classList.add("dense--medium");
+      }
+    }
+
+    function rgbToHsl(r, g, b) {
+      r /= 255; g /= 255; b /= 255;
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      let h = 0, s = 0, l = (max + min) / 2;
+      if (max !== min) {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+          case g: h = (b - r) / d + 2; break;
+          case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+      }
+      return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
+    }
+
+    function aplicarColorDinamicoDesdeImagen(imgEl) {
+      try {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = 24;
+        canvas.height = 24;
+        ctx.drawImage(imgEl, 0, 0, 24, 24);
+        const data = ctx.getImageData(0, 0, 24, 24).data;
+
+        let rSum = 0, gSum = 0, bSum = 0, count = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          rSum += data[i];
+          gSum += data[i + 1];
+          bSum += data[i + 2];
+          count++;
+        }
+
+        const [h, s] = rgbToHsl(rSum / count, gSum / count, bSum / count);
+        const satAcento = Math.min(Math.max(s, 35), 75);
+        document.documentElement.style.setProperty("--accent", `hsl(${h}, ${satAcento}%, 26%)`);
+        document.documentElement.style.setProperty("--text-primary", `hsl(${h}, ${Math.min(satAcento, 30)}%, 11%)`);
+      } catch (_) {
+        // Conserva contraste por defecto si no se puede leer píxeles
+      }
+    }
+
+    async function obtenerWallpapers() {
+      const exts = /\.(jpe?g|png|webp|gif)$/i;
+      try {
+        const apiUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${WALLPAPERS_DIR}`;
+        const res = await fetch(apiUrl, { cache: "no-store" });
+        if (!res.ok) throw new Error("API limit or not found");
+        const items = await res.json();
+        if (Array.isArray(items)) {
+          const files = items
+            .filter((item) => item.type === "file" && exts.test(item.name))
+            .map((item) => item.download_url || `./${WALLPAPERS_DIR}/${encodeURIComponent(item.name)}`);
+          if (files.length > 0) return files;
+        }
+      } catch (_) {
+        // Respaldo local
+      }
+      return FALLBACK_WALLPAPERS.map((name) => `./${WALLPAPERS_DIR}/${encodeURIComponent(name)}`);
     }
 
     function construirFraseDinamica(frasesObj) {
@@ -122,32 +286,37 @@
         ? frasesObj.patrones
         : [Object.keys(modulos)];
 
-      const patronElegido = pickItem("patron", patronesValidos);
+      const patronElegido = pickRandom(patronesValidos);
       if (!Array.isArray(patronElegido) || patronElegido.length === 0) return "";
 
       const partes = patronElegido
-        .map((nombreModulo) => pickItem(`mod_${nombreModulo}`, modulos[nombreModulo]))
+        .map((nombreModulo) => pickRandom(modulos[nombreModulo]))
         .filter(Boolean);
 
       return limpiarEspacios(partes.join(" "));
     }
 
-    function generarMensaje() {
-      if (!dataSaludos || !dataFrases) return;
-
-      const nombre = limpiarEspacios(dataSaludos.nombre || "Andrés");
-      const saludoRaw = pickItem("saludo", dataSaludos.saludos);
-      const saludoFinal = limpiarEspacios(saludoRaw.replaceAll("{nombre}", nombre));
-
-      const fraseFinal = construirFraseDinamica(dataFrases);
-      const parrafoFinal = limpiarEspacios(pickItem("parrafo", dataFrases.parrafos));
-
-      document.getElementById("saludo").textContent = saludoFinal;
-      document.getElementById("frase").textContent = fraseFinal;
-      document.getElementById("parrafo").textContent = parrafoFinal;
+    function configurarYoutube() {
+      if (!PLAYLIST_ID) return;
+      const iframe = document.getElementById("yt-player");
+      const randomStartIndex = Math.floor(Math.random() * PLAYLIST_MAX_START_INDEX);
+      iframe.src =
+        `https://www.youtube.com/embed/videoseries?list=${encodeURIComponent(PLAYLIST_ID)}` +
+        `&index=${randomStartIndex}&shuffle=1&rel=0`;
     }
 
     async function init() {
+      const wallpapers = await obtenerWallpapers();
+      const elegidoFondo = pickRandom(wallpapers);
+      const imgEl = document.getElementById("wallpaper");
+
+      if (elegidoFondo) {
+        imgEl.onload = () => aplicarColorDinamicoDesdeImagen(imgEl);
+        imgEl.src = elegidoFondo;
+      }
+
+      configurarYoutube();
+
       try {
         const [resSaludos, resFrases] = await Promise.all([
           fetch("./saludos.json", { cache: "no-store" }),
@@ -158,17 +327,33 @@
           throw new Error("No se pudieron cargar saludos.json o frases.json");
         }
 
-        dataSaludos = await resSaludos.json();
-        dataFrases = await resFrases.json();
-        generarMensaje();
+        const dataSaludos = await resSaludos.json();
+        const dataFrases = await resFrases.json();
+
+        const nombre = limpiarEspacios(dataSaludos.nombre || "Andrés");
+        const saludoRaw = pickRandom(dataSaludos.saludos) || "Hola, {nombre}.";
+        const saludoFinal = limpiarEspacios(saludoRaw.replaceAll("{nombre}", nombre));
+        const fraseFinal = construirFraseDinamica(dataFrases);
+        const parrafoFinal = limpiarEspacios(pickRandom(dataFrases.parrafos) || "");
+
+        const elSaludo = document.getElementById("saludo");
+        const elFrase = document.getElementById("frase");
+        const elParrafo = document.getElementById("parrafo");
+
+        elSaludo.textContent = saludoFinal;
+        elFrase.textContent = fraseFinal;
+        elParrafo.textContent = parrafoFinal;
+
+        ajustarDensidad(elSaludo, saludoFinal);
+        ajustarDensidad(elFrase, fraseFinal);
+        ajustarDensidad(elParrafo, parrafoFinal);
       } catch (err) {
-        document.getElementById("saludo").textContent = "Error al cargar el contenido.";
+        document.getElementById("saludo").textContent = "Error al cargar";
         document.getElementById("frase").textContent = "";
         document.getElementById("parrafo").textContent = err.message;
       }
     }
 
-    document.getElementById("btn-generar").addEventListener("click", generarMensaje);
     init();
   </script>
 </body>
